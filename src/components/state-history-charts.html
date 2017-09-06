@@ -5,6 +5,7 @@
 
 <link rel="import" href="./state-history-chart-timeline.html">
 <link rel="import" href="./state-history-chart-line.html">
+<link rel="import" href="entity/ha-chart-timeline.html">
 
 <dom-module id="state-history-charts">
   <template>
@@ -27,6 +28,8 @@
 
     <google-legacy-loader on-api-load="_googleApiLoaded"></google-legacy-loader>
 
+    <ha-chart-timeline data='[[historyData.timeline]]'></ha-chart-timeline>
+
     <template is='dom-if' if='[[_isLoading]]'>
       <div class='loading-container'>
         <paper-spinner active alt='Updating history data'></paper-spinner>
@@ -37,6 +40,7 @@
       <template is='dom-if' if='[[_computeIsEmpty(historyData)]]'>
         No state history found.
       </template>
+
 
       <state-history-chart-timeline
         data='[[historyData.timeline]]'
