@@ -3,49 +3,51 @@
 
 <dom-module id='ha-chart-timeline'>
   <template>
-    <div id='hachart'></div>
+    <div id='hachart' style='position:relative;overflow:visible'></div>
   </template>
 </dom-module>
 <script>
   /**
  * TODO:
- * 1. fix tooltip
+ * xx fix tooltip
  * 2. fix history chart for single sensor
  * 3. add d3 to bower
  * 4. add support for static color text
  * 5. fix tooltip date
+ * 6. shorten title line for small screen
  */
-  (function () {
-    var css = 'div.tooltip {\
-  position: absolute;\
-  text-align: center;\
-  padding: 5px;\
-  /* font: 12px sans-serif; */\
-  background: white;\
-  border: 1px solid #AAA;\
-  border-radius: 2px;\
-  pointer-events: none;\
-}';
+(function () {
+  var css = 'position:absolute;padding: 5px;background: white;'
+    +'border:1px solid #AAA;border-radius: 2px;'
+    + 'pointer-events: none;z-index:32767';
+var tooltip = function (domobj, html_func) {
 
-var tooltip = function (html_func) {
+  if(!domobj) {
+    domobj = 'body';
+  }
 
-  d3.select('head')
-    .selectAll('#tooltip').data([1]).enter()
-    .append('style')
-    .attr('id', 'tooltip')
-    .text(css);
-
-  var selection = d3.select('body').append('div')
-    .attr('class', 'tooltip')
+  var selection = d3.select(domobj).append('div')
+    .attr('style', css)
     .style('opacity', 0);
 
-  selection.show = function () {
+  selection.show = function (d, i, r) {
     selection.transition()
       .duration(100)
       .style('opacity', .95);
     selection.html(html_func.apply(null, arguments))
-      .style('left', (d3.event.pageX) + 'px')
-      .style('top', (d3.event.pageY - 28) + 'px');
+      .style('left', 'unset')
+      .style('right', 'unset');
+    var node1 = selection.node();
+    var width1 = node1.clientWidth;
+    var x1 = parseInt(r[0].attributes['x'].value);
+    var parentWidth = node1.parentNode.clientWidth;
+    if(x1 + width1 + 10 > parentWidth){
+      selection.style('right', '10px' )
+        .style('top', r[0].attributes['data-y'].value + 'px');
+    } else {
+      selection.style('left', x1 + 'px')
+        .style('top', r[0].attributes['data-y'].value + 'px');
+    }
   };
 
   selection.hide = function (d) {
@@ -84,7 +86,7 @@ function timelineAxis(orient, scale) {
 
   function axis(selection) {
     var domain = scale.domain(),
-      tip = tooltip(identity),
+      tip = tooltip(false, identity),
       colorscale = d3.scaleOrdinal(colors),
       invertscale = d3.scaleOrdinal(colors.reverse()),
       labels = trim_long_string(trim),
@@ -225,23 +227,6 @@ var timeline = function () {
     starts = f(1),
     ends = f(2);
 
-  function trim_text(d, i) {
-    var task = d3.select(this.parentNode),
-      text = task.select('text'),
-      rect = task.select('rect'),
-      string = names(d),
-      text_width = text.node().getComputedTextLength();
-
-    // this is overkill if duration is 0
-    d3.active(this)
-      .tween('text', function () {
-        return function (t) {
-          var width = rect.attr('width') - 2 * padding,
-            ratio = width / text_width;
-          text.text(ratio < 1 ? string.substring(0, Math.floor(string.length * ratio)) : string);
-        }
-      });
-  }
   var color_index = 0;
   var color_dict = new Map();
   function getColor(name, data, cScale) {
@@ -267,7 +252,6 @@ var timeline = function () {
     var
       dataTable = selection.datum(),
       rows = d3.map(dataTable, x => x.label).keys(),
-      tip = new tooltip(tooltip_html),
       cScale = d3.scaleOrdinal(colors);
 
     dates = dates ||
@@ -279,9 +263,11 @@ var timeline = function () {
         height = rows.length * (getFontSize(this) + 4 * padding),
         yScale = d3.scaleBand().domain(rows).range([0, height]), //.padding(0.1),
         xScale = d3.scaleTime().domain(dates),
-        yAxis = (reversed ? timelineAxisRight : timelineAxisLeft)(yScale).width(width)
+        yAxis = (reversed ? timelineAxisRight : timelineAxisLeft)(yScale).width(width);
+      d3.select(this).select('div').remove();
       d3.select(this).select('svg').remove();
       var svg = d3.select(this).append('svg').attr('class', 'timeline');
+      var tip = new tooltip(this, tooltip_html);
 
       svg.attr('width', width);
       svg.attr('height', height + 20); // margin.bottom
@@ -308,8 +294,10 @@ var timeline = function () {
       var ticks = xScale.ticks().map(xScale);
       yGroup.call(yAxis.draw_ticks, ticks);
 
+      var padding2 = padding + padding;
       var yScaleList = data.map(x => yScale(x.label) + padding);
-      var yScaleBandwidth = yScale.bandwidth() - padding - padding;
+      var yScaleBandwidth = yScale.bandwidth() - padding2;
+
 
       var tasks = g.append('g')
         .selectAll('g')
@@ -317,71 +305,47 @@ var timeline = function () {
         .enter().append('g')
         .attr('transform', d => 'translate(0, ' + yScale(d.label) + ')')
         .classed('task', true)
-        .each((d1, i, n) => {
+        .each((d1, i1, n) => {
           var cScale;
           if(!isNaN(d1.min)) {
-            cScale = d3.scaleLinear().domain([d1.min,d1.max]).range([0, 240]);
+            cScale = d3.scaleLinear().domain([d1.min,d1.max]).range([0, 270]);
           } else {
-            //cScale = 
+            cScale = getColor;
           }
-          d3.select(n[i]).selectAll('rect')
+          d3.select(n[i1]).selectAll('rect')
             .data(d => d.data).enter().each((d2, i, n) => {
               g2 = d3.select(n[i]);
-              var bgColor = d3.hcl(cScale(names(d2)), 95, 75);//getColor(names(d2), d1, cScale);
+              var bgColor = d3.hcl(cScale(names(d2)), 100, 75);//getColor(names(d2), d1, cScale);
               var xStart = xScale(starts(d2));
               var xWidth = xScale(ends(d2)) - xStart;
               g2.append('rect')
                 .attr('y', 5)
                 .attr('x', xStart)
-                .attr('width', xWidth)
+                .attr('width', xWidth + 0.5)
                 .attr('height', yScaleBandwidth)
+                .attr('data-y', yScaleList[i1] + yScaleBandwidth)
                 .on('mouseover', tip.show)
                 .on('mouseout', tip.hide)
                 .attr('fill', bgColor);
-              g2.append('text')
-                .attr('x', xStart)
-                .attr('y', 5)
-                .attr('dx', padding)
-                .attr('dy', yScaleBandwidth / 2 + padding)
-                .attr('text-anchor', 'start')
-                .attr('fill', 'black')
-                .attr('pointer-events', 'none')
-                //.attr('stroke', 'white')
-                //.attr('stroke-width', '1')
-                .text(names);
+              if(xWidth > padding2) {
+                var str1 = names(d2);
+                var t = g2
+                  .append('text')
+                  .attr('x', xStart)
+                  .attr('y', 5)
+                  .attr('dx', padding)
+                  .attr('dy', yScaleBandwidth / 2 + padding)
+                  .attr('text-anchor', 'start')
+                  .attr('fill', 'black')
+                  .attr('pointer-events', 'none')
+                  .text(str1);
+                if(xWidth - padding < t.node().getComputedTextLength()) {
+                  t.remove();
+                }
+              }
           });
         });
       return;
-      //tasks.enter().
-
-
-      var tasks_enter = tasks.enter()
-        .append('g')
-
-      tasks_enter
-        .append('rect')
-        .attr('y', padding)
-        .attr('height', yScale.bandwidth() - 2 * padding)
-        .on('mouseover', tip.show)
-        .on('mouseout', tip.hide)
-        .style('fill', x => getColor(names(x)));
-
-      tasks_enter
-        .append('text')
-        .attr('text-anchor', 'start')
-        .attr('fill', d => textColor(cScale(names(d))))
-        .attr('pointer-events', 'none')
-        .attr('dx', padding)
-        .attr('y', yScale.bandwidth() / 2)
-        .attr('dy', '0.32em')
-        .text(names);
-
-      tasks = tasks.merge(tasks_enter);
-
-      tasks
-        .attr('transform', d => translate(range[0], yScale(label)))
-        .selectAll('rect')
-        .attr('width', 0);
 
       tasks
         //.transition().duration(duration)
