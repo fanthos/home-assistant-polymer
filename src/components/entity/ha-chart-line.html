@@ -1,0 +1,142 @@
+<link rel='import' href='../../../bower_components/polymer/polymer.html'>
+<link rel='import' href='ha-chart-base.html'>
+<dom-module id='ha-chart-line'>
+  <template>
+      <billboard-charts publish data="[[chartData]]" selected-element ="{{selectedDataPoint}}"></billboard-charts>
+  </template>
+</dom-module>
+<script>
+
+Polymer({
+  is: 'ha-chart-line',
+
+  useNativeCSSProperties: true,
+
+  properties: {
+    data: {
+      type: Object,
+      observer: 'dataChanged',
+    },
+
+    unit: {
+      type: String,
+    },
+
+    isSingleDevice: {
+      type: Boolean,
+      value: false,
+    },
+
+    isAttached: {
+      type: Boolean,
+      value: false,
+      observer: 'dataChanged',
+    },
+
+    endTime: {
+      type: Object,
+    },
+    
+    chartEngine: {
+      type: Object,
+    },
+
+    chartData: {
+      type: Object,
+    },
+  },
+
+  created: function () {
+    this.style.display = 'block';
+  },
+
+  attached: function () {
+    this.isAttached = true;
+  },
+
+  dataChanged: function () {
+    this.drawChart();
+  },
+
+  drawChart: function () {
+    const lineMargin = {top:60, bottom: 50, left: 50, right: 30};
+    var container = d3.select(this.$.hachart),
+      numTimelines = 0,
+      tooltipContainer,
+      dataset;
+
+    if (!this.isAttached) {
+      return;
+    }
+
+    var xs = {};
+    var dataTable = [];
+    this.data.forEach(function (stateInfo) {
+      if (stateInfo.length === 0) return;
+      var entityDisplay = window.hassUtil.computeStateName(stateInfo[0]);
+      xs[entityDisplay] = entityDisplay + '_x';
+      var dataTime = [entityDisplay + '_x'];
+      var dataRow = [entityDisplay];
+
+      stateInfo.forEach(function (state) {
+        var timeStamp = new Date(state.last_changed);
+        // if (timeStamp > endTime) {
+        //   // Drop datapoints that are after the requested endTime. This could happen if
+        //   // endTime is 'now' and client time is not in sync with server time.
+        //   return;
+        // }
+        dataTime.push(timeStamp);
+        dataRow.push(+state.state);
+      });
+      dataTable.push(dataTime, dataRow);
+      numTimelines++;
+    });
+    var timeDateFormat = d3.timeFormat('%Y-%m-%d'),
+      timeDayFormat = d3.timeFormat('%H:%M:%S')
+    var chartData = {
+      data: {
+        xs: xs,
+        columns: dataTable,
+      },
+      axis: {
+        x: {
+          type: 'timeseries',
+          tick: {
+            culling: {
+              max: 6
+            },
+            format: d => {
+              if(d.getHours() + d.getMinutes() + d.getSeconds() == 0){
+                return timeDateFormat(d);
+              } else {
+                return timeDayFormat(d);
+              }
+            },
+            fit:false,
+          }
+        }
+      },
+      size: {
+        height: 220,
+      },
+      point: {
+        show: false
+      },
+      grid: {
+        x: {
+          show: true,
+        },
+        y: {
+          show: true,
+          ticks: 6,
+        }
+      },
+      tooltip: {
+        show: true,
+      },
+    };
+    this.chartData = chartData;
+  },
+});
+
+</script>

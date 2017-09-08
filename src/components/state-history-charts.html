@@ -6,6 +6,7 @@
 <link rel="import" href="./state-history-chart-timeline.html">
 <link rel="import" href="./state-history-chart-line.html">
 <link rel="import" href="entity/ha-chart-timeline.html">
+<link rel="import" href="entity/ha-chart-line.html">
 
 <dom-module id="state-history-charts">
   <template>
@@ -28,7 +29,18 @@
 
     <google-legacy-loader on-api-load="_googleApiLoaded"></google-legacy-loader>
 
-    <ha-chart-timeline data='[[historyData.timeline]]'></ha-chart-timeline>
+    <ha-chart-timeline
+      data='[[historyData.timeline]]'
+      end-time='[[_computeEndTime(endTime, upToNow)]]'>
+    </ha-chart-timeline>
+    <template is='dom-repeat' items='[[historyData.line]]'>
+      <ha-chart-line
+        unit='[[item.unit]]'
+        data='[[item.data]]'
+        is-single-device='[[_computeIsSingleLineChart(historyData)]]'
+        end-time='[[_computeEndTime(endTime, upToNow)]]'>
+      </ha-chart-line>
+    </template>
 
     <template is='dom-if' if='[[_isLoading]]'>
       <div class='loading-container'>
