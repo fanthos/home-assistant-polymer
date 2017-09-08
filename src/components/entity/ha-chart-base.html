@@ -1,5 +1,24 @@
 <link rel='import' href='../../../bower_components/polymer/polymer.html'>
-<link rel='import' href='../../../bower_components/billboard-charts/billboard-charts-sync.html'>
+
+<dom-module id="ha-chart-base">
+  <link rel="import" type="css" href="../../../bower_components/billboard.js/dist/billboard.min.css">
+  <template>
+    <!--link rel="stylesheet" on-load="loaded" type="text/css" href="[[cssPath]]"-->
+    <style>
+      :host {
+        display: block;
+        /* @apply --my-custom-chart-istic-mixin; */
+      }
+    </style>
+    <div id="chartTarget"></div>
+  </template>
+  <script src="../../../bower_components/d3/d3.min.js"></script>
+  <script src="../../../bower_components/billboard.js/dist/billboard.min.js"></script>
+  <script>
+      billboard_charts_sync = true;
+  </script>
+  
+</dom-module>
 <script>
     
   /**
@@ -11,6 +30,7 @@
  * xx fix tooltip date
  * -- shorten title line for small screen
  * 7. add highlight for selected item
+ * 8. import 'billboard-charts' after it has css fixed
  *
  * xx: fixed
  * --: workarounded
@@ -399,5 +419,80 @@ x.timelineAxisRight = timelineAxisRight;
 x.durationFormat = durationFormat;
 
 Object.assign(d3, x);
+})();
+
+
+(function () {
+    if (customElements.get('ha-chart-base'))
+        return;
+    /**
+     * `billboard-charts`
+     * Polymer wrapper around billboard.js charting library
+     *
+     * @customElement
+     * @polymer
+     * @demo demo/index.html
+     */
+    class BillboardCharts extends Polymer.Element {
+        constructor() {
+            super(...arguments);
+        }
+        get chart() {
+            return this._chart;
+        }
+        static get is() { return 'ha-chart-base'; }
+        static get properties() {
+            return {
+                publish: {
+                    type: Boolean,
+                    observer: 'onPropsChange'
+                },
+                data: {
+                    type: Object,
+                    observer: 'onPropsChange'
+                },
+                newData: {
+                    type: Object,
+                    observer: 'onNewData'
+                },
+                selectedElement: {
+                    type: Object,
+                    readOnly: true,
+                    notify: true,
+                }
+            };
+        }
+        loaded() {
+            this._cssLoaded = true;
+            this.onPropsChange();
+        }
+        onPropsChange() {
+            // if (!this._cssLoaded)
+            //     return;
+            if (!this.publish || !this.data || !this.data.data)
+                return;
+            this.data.bindto = this.$.chartTarget;
+            if (!this.data.data.onclick) {
+                //debugger;
+                this.data.data.onclick = (dataPoint, element) => {
+                    this['_setSelectedElement'](dataPoint);
+                };
+            }
+            if (!this._chart) {
+                this._chart = bb.generate(this.data);
+                if (this.newData)
+                    this.onNewData();
+            }
+            else {
+                this._chart = bb.generate(this.data);
+            }
+        }
+        onNewData() {
+            if (this.newData && this._chart) {
+                this._chart.load(this.newData);
+            }
+        }
+    }
+    customElements.define(BillboardCharts.is, BillboardCharts);
 })();
 </script>

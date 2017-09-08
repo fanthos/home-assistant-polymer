@@ -2,7 +2,7 @@
 <link rel='import' href='ha-chart-base.html'>
 <dom-module id='ha-chart-line'>
   <template>
-      <billboard-charts publish data="[[chartData]]" selected-element ="{{selectedDataPoint}}"></billboard-charts>
+      <ha-chart-base publish data="[[chartData]]" selected-element ="{{selectedDataPoint}}"></ha-chart-base>
   </template>
 </dom-module>
 <script>
@@ -91,8 +91,9 @@ Polymer({
       dataTable.push(dataTime, dataRow);
       numTimelines++;
     });
-    var timeDateFormat = d3.timeFormat('%Y-%m-%d'),
-      timeDayFormat = d3.timeFormat('%H:%M:%S')
+    var timeDateFormat = d3.timeFormat('%m-%d'),
+      timeDayFormat = d3.timeFormat('%H:%M'),
+      timeFullFormat = d3.timeFormat('%Y-%m-%d %H:%M:%S')
     var chartData = {
       data: {
         xs: xs,
@@ -102,9 +103,7 @@ Polymer({
         x: {
           type: 'timeseries',
           tick: {
-            culling: {
-              max: 6
-            },
+            culling: true,
             format: d => {
               if(d.getHours() + d.getMinutes() + d.getSeconds() == 0){
                 return timeDateFormat(d);
@@ -112,7 +111,20 @@ Polymer({
                 return timeDayFormat(d);
               }
             },
-            fit:false,
+            fit: false,
+            width: 60,
+          },
+          padding: {
+            left: 0,
+          }
+        },
+        y: {
+          tick: {
+            count: 5
+          },
+          padding: {
+            top: 0,
+            bottom: 0
           }
         }
       },
@@ -128,11 +140,13 @@ Polymer({
         },
         y: {
           show: true,
-          ticks: 6,
         }
       },
       tooltip: {
         show: true,
+        format: {
+          title: timeFullFormat,
+        }
       },
     };
     this.chartData = chartData;
