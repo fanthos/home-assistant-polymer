@@ -59,12 +59,6 @@ Polymer({
   },
 
   drawChart: function () {
-    const lineMargin = {top:60, bottom: 50, left: 50, right: 30};
-    var container = d3.select(this.$.hachart),
-      numTimelines = 0,
-      tooltipContainer,
-      dataset;
-
     if (!this.isAttached) {
       return;
     }
@@ -89,11 +83,10 @@ Polymer({
         dataRow.push(+state.state);
       });
       dataTable.push(dataTime, dataRow);
-      numTimelines++;
     });
-    var timeDateFormat = d3.timeFormat('%m-%d'),
-      timeDayFormat = d3.timeFormat('%H:%M'),
-      timeFullFormat = d3.timeFormat('%Y-%m-%d %H:%M:%S')
+    const timeDateFormat = d3.timeFormat('%m-%d');
+    const timeDayFormat = d3.timeFormat('%H:%M');
+    const timeFullFormat = d3.timeFormat('%Y-%m-%d %H:%M:%S');
     var chartData = {
       data: {
         xs: xs,
@@ -105,7 +98,7 @@ Polymer({
           tick: {
             culling: true,
             format: d => {
-              if(d.getHours() + d.getMinutes() + d.getSeconds() == 0){
+              if (d.getHours() + d.getMinutes() + d.getSeconds() === 0) {
                 return timeDateFormat(d);
               } else {
                 return timeDayFormat(d);
@@ -131,19 +124,12 @@ Polymer({
       size: {
         height: 220,
       },
-      point: {
-        show: false
-      },
+      point: { show: false },
       grid: {
-        x: {
-          show: true,
-        },
-        y: {
-          show: true,
-        }
+        x: { show: true },
+        y: { show: true }
       },
       tooltip: {
-        show: true,
         format: {
           title: timeFullFormat,
         }
