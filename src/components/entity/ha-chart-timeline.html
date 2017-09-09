@@ -3,7 +3,7 @@
 
 <dom-module id='ha-chart-timeline'>
   <template>
-    <div id='hachart' style='position:relative;overflow:visible'></div>
+      <ha-chart-base publish data="[[chartData]]" selected-element ="{{selectedDataPoint}}"></ha-chart-base>
   </template>
 </dom-module>
 <script>
@@ -164,9 +164,7 @@ Polymer({
       numTimelines++;
     });
 
-    var chart = d3.chartTimeline();
-
-    d3.select(this.$.hachart).datum(dataTable).call(chart);
+    this.chartData = {data:dataTable, type: 'timeline'};
     return;
   },
 });

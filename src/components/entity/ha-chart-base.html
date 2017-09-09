@@ -5,7 +5,7 @@
   <template>
     <!--link rel="stylesheet" on-load="loaded" type="text/css" href="[[cssPath]]"-->
     <style>
-      :host {
+       :host {
         display: block;
         /* @apply --my-custom-chart-istic-mixin; */
       }
@@ -15,484 +15,485 @@
   <script src="../../../bower_components/d3/d3.min.js"></script>
   <script src="../../../bower_components/billboard.js/dist/billboard.min.js"></script>
   <script>
-      billboard_charts_sync = true;
+    billboard_charts_sync = true;
   </script>
-  
+
 </dom-module>
 <script>
-    
   /**
+ * Original: d3-gtimeline at Github
+ * Modified and rewrited for Home Assistant
+ * 
  * TODO:
- * xx fix tooltip
- * 2. fix history chart for single sensor
- * 3. add d3 to bower
- * 4. add support for static color text
- * xx fix tooltip date
  * -- shorten title line for small screen
  * 7. add highlight for selected item
- * 8. import 'billboard-charts' after it has css fixed
+ * 8. Repaint when viewpoint change
+ * *. import 'billboard-charts' after it has css fixed
  *
  * xx: fixed
  * --: workarounded
  */
-(function () {
-  var css = 'position:absolute;padding: 5px;background: white;'
-    + 'border:1px solid #AAA;border-radius: 2px;'
-    + 'pointer-events: none;z-index:32767';
-var tooltip = function (domobj, html_func) {
+  (function () {
+    var css = 'position:absolute;padding: 5px;background: white;'
+      + 'border:1px solid #AAA;border-radius: 2px;'
+      + 'pointer-events: none;z-index:32767';
+    var tooltip = function (domobj, html_func) {
 
-  if(!domobj) {
-    domobj = 'body';
-  }
-
-  var selection = d3.select(domobj).append('div')
-    .attr('style', css)
-    .style('opacity', 0);
-
-  selection.show = function (d, i, r) {
-    selection.transition()
-      .duration(100)
-      .style('opacity', .95);
-    selection.html(html_func.apply(null, arguments))
-      .style('left', 'unset')
-      .style('right', 'unset');
-    var node1 = selection.node();
-    var width1 = node1.clientWidth;
-    var x1 = parseInt(r[0].attributes['x'].value);
-    var parentWidth = node1.parentNode.clientWidth;
-    if(x1 + width1 + 10 > parentWidth){
-      selection.style('right', '10px' )
-        .style('top', r[0].attributes['data-y'].value + 'px');
-    } else {
-      selection.style('left', x1 + 'px')
-        .style('top', r[0].attributes['data-y'].value + 'px');
-    }
-  };
-
-  selection.hide = function (d) {
-    selection.transition()
-      .duration(100)
-      .style('opacity', 0);
-  };
-
-  return selection;
-};
-
-function identity(x) {
-  return x;
-}
-
-var right = 1;
-var left = 2;
-
-function timelineAxis(orient, scale) {
-  var colors = ['#FFF', '#EEE'],
-    padding = 5,
-    range,
-    line_color = '#AAA',
-    trim = 40,
-    width = 100;
-
-  function max_text_width(selection) {
-    return d3.max(selection.nodes().map(d => d.getComputedTextLength()));
-  }
-
-  function trim_long_string(value) {
-    return function (d) {
-      return d.length > value ? d.slice(0, value - 1) + '\u2026' : d
-    }
-  }
-
-  function axis(selection) {
-    var domain = scale.domain(),
-      //tip = tooltip(false, identity),
-      colorscale = d3.scaleOrdinal(colors),
-      invertscale = d3.scaleOrdinal(colors.reverse()),
-      labels = trim_long_string(trim),
-      row = selection.selectAll('.row').data(domain, scale).order(),
-      rowEnter = row.enter().append('g').attr('class', 'row'),
-      rowExit = row.exit(),
-      texts = row.select('text');
-
-    row = row.merge(rowEnter)
-      .attr('transform', (d) => 'translate(0,' + scale(d) + ')');
-
-    rowExit.remove();
-
-    rowEnter.append('rect')
-      .attr('y', 0.5)
-      .attr('width', width)
-      .attr('height', scale.bandwidth())
-      .attr('stroke', line_color)
-      .attr('stroke-width', 0.75)
-      .attr('fill', colorscale);  // should be re-done if domain changed?
-
-    //rowEnter.append('path').attr('stroke', invertscale);
-
-    texts = texts.merge(rowEnter.append('text')
-      .attr('y', scale.bandwidth() / 2)
-      .attr('dy', '0.32em')
-      // .on('mouseover', function (d) {
-      //   if (d3.select(this).text() != d)
-      //     tip.show(d);
-      // })
-      // .on('mouseout', tip.hide)
-      ).text(labels);
-
-    var text_width_limit = width * .2;
-    var offset = max_text_width(texts) + 2 * padding;
-    offset = Math.min(text_width_limit, offset);
-    offset = orient === right ? width - offset : offset;
-
-    range = orient === right ? [0, offset] : [offset, width];
-
-    texts
-      .attr('text-anchor', orient === right ? 'start' : 'end')
-      .attr('dx', orient === right ? padding : -padding)
-      .attr('x', offset);
-
-    selection.append('path')
-      .attr('stroke', line_color)
-      .attr('d', 'M' + (offset + .5) + ',0.5V' + scale.range()[1]);
-  }
-
-  axis.draw_ticks = function (selection, ticks) {
-    selection.selectAll('.row').select('path')
-      .attr('d', ticks.map(
-        (t) => 'M' + t + ',' + 1 + 'v' + (scale.bandwidth() - 1)).join(''));
-  };
-
-  axis.scale = function (_) { return arguments.length ? (scale = _, axis) : scale };
-  axis.width = function (_) { return arguments.length ? (width = _, axis) : width };
-  axis.colors = function (_) { return arguments.length ? (colors = _, axis) : colors };
-  axis.padding = function (_) { return arguments.length ? (padding = _, axis) : padding };
-  axis.range = function (_) { return arguments.length ? (range = _, axis) : range };
-  axis.trim = function (_) { return arguments.length ? (trim = _, axis) : trim };
-
-  return axis;
-}
-
-function timelineAxisLeft(scale) {
-  return timelineAxis(left, scale);
-}
-
-function timelineAxisRight(scale) {
-  return timelineAxis(right, scale);
-}
-
-//var moment = require('moment'),
-//    d3 = require('d3');
-
-//import { createDuration } from 'moment/src/lib/duration/create';
-//import {humanize} from 'moment/src/lib/duration/humanize';
-
-function durationFormat(seconds) {
-  //return createDuration(end-start).humanize();
-  //if(moment)
-  //	return moment.duration(end-start).humanize();
-
-  // var seconds = d3.timeSecond.count(start, end),
-  function round10(x) {
-    return Math.round(x*10) / 10;
-  }
-  var cut_off = 2;
-  if (seconds < cut_off * 60)
-    return seconds + 's'
-  else if (seconds < cut_off * 60 * 60)
-    return round10(seconds / 60) + ' min'
-  else if (seconds < cut_off * 60 * 60 * 24)
-    return round10(seconds / 3600) + ' hours'
-  else if (seconds < cut_off * 3600 * 24 * 30)
-    return round10(seconds / 86400) + ' day(s)'
-  else if (seconds < cut_off * 3600 * 24 * 365)
-    return round10(seconds / (86400 * 30)) + ' month(s)'
-  else
-    return round10(seconds / (86400 * 365)) + ' year(s)';
-
-}
-
-var google_colors = [
-  '#4285f4', '#db4437', '#f4b400', '#0f9d58', '#ab47bc', '#5e97f5', '#e06055',
-  '#f5bf26', '#33ab71', '#b762c6', '#00acc1', '#ff855f', '#9e9d24', '#26b8ca', '#ff7043'];
-
-function getFontSize(element) {
-  var style = window.getComputedStyle(element, null).getPropertyValue('font-size');
-  return parseFloat(style);
-}
-
-function translate(x, y) {
-  return 'translate(' + x + ',' + y + ')';
-}
-
-var timeline = function () {
-  function f(value) {
-    return function (d) {
-      return value === undefined ? d : d[value];
-    }
-  }
-
-  var colors = google_colors,
-    padding = 5,
-    reversed = false,
-    today = false,
-    dates,
-    const_width,
-    duration = 0,
-    names = f(0),
-    starts = f(1),
-    ends = f(2);
-
-  var color_index = 0;
-  var color_dict = new Map();
-  function getColor(name, data, cScale) {
-    if (!data) {
-      return 'black';
-    }
-    if (!isNaN(data.min)) {
-      var val1 = parseInt(name);
-      var val2 = (val1 - data.min) / (data.max - data.min) * 240;
-      return 'hsl(' + val2 + ', 85%, 65%)';
-    } else {
-      var ret = color_dict.get(name);
-      if (ret === undefined) {
-        ret = google_colors[color_index];
-        color_index++;
-        color_dict.set(name, ret);
+      if (!domobj) {
+        domobj = 'body';
       }
-      return ret;
+
+      var selection = d3.select(domobj).append('div')
+        .attr('style', css)
+        .style('opacity', 0);
+
+      selection.show = function (d, i, r) {
+        selection.transition()
+          .duration(100)
+          .style('opacity', .95);
+        var datay = r[0].attributes['data-y'].value;
+        var node1 = selection.node();
+        var width1 = node1.clientWidth;
+        var x1 = parseInt(r[0].attributes['x'].value);
+        var parentWidth = node1.parentNode.clientWidth;
+        selection.html(html_func.apply(null, d, i, r))
+          .style('left', 'unset')
+          .style('right', 'unset');
+        if (x1 + width1 + 10 > parentWidth) {
+          selection.style('right', '10px')
+            .style('top', datay + 'px');
+        } else {
+          selection.style('left', x1 + 'px')
+            .style('top', datay + 'px');
+        }
+      };
+
+      selection.hide = function (d) {
+        selection.transition()
+          .duration(100)
+          .style('opacity', 0);
+      };
+
+      return selection;
+    };
+
+    function identity(x) {
+      return x;
     }
-  }
 
-  function chart(selection) {
-    var
-      dataTable = selection.datum(),
-      rows = d3.map(dataTable, x => x.label).keys(),
-      cScale = d3.scaleOrdinal(colors);
+    var none = 0;
+    var right = 1;
+    var left = 2;
 
-    dates = dates ||
-      [d3.min(dataTable, d => d.start), d3.max(dataTable, d => d.end)];
-    //dates = 
+    function timelineAxis(orient, scale) {
+      var colors = ['#FFF', '#EEE'],
+        padding = 5,
+        range,
+        line_color = '#AAA',
+        trim = 40,
+        width = 100;
 
-    selection.each(function (data) {
-      var width = const_width || this.getBoundingClientRect().width,
-        height = rows.length * (getFontSize(this) + 4 * padding),
-        yScale = d3.scaleBand().domain(rows).range([0, height]), //.padding(0.1),
-        xScale = d3.scaleTime().domain(dates),
-        yAxis = (reversed ? timelineAxisRight : timelineAxisLeft)(yScale).width(width);
-      d3.select(this).select('div').remove();
-      d3.select(this).select('svg').remove();
-      var svg = d3.select(this).append('svg').attr('class', 'timeline');
-      var tip = new tooltip(this, tooltip_html);
+      function max_text_width(selection) {
+        return d3.max(selection.nodes().map(d => d.getComputedTextLength()));
+      }
 
-      svg.attr('width', width);
-      svg.attr('height', height + 20); // margin.bottom
+      function trim_long_string(value) {
+        return function (d) {
+          return d.length > value ? d.slice(0, value - 1) + '\u2026' : d
+        }
+      }
 
-      var g = svg.append('g');
-      g.selectAll('g.task').data(data).exit().remove();
+      function axis(selection) {
+        var domain = scale.domain(),
+          colorscale = d3.scaleOrdinal(colors),
+          invertscale = d3.scaleOrdinal(colors.reverse()),
+          labels = trim_long_string(trim),
+          row = selection.selectAll('.row').data(domain, scale).order(),
+          rowEnter = row.enter().append('g').attr('class', 'row'),
+          rowExit = row.exit(),
+          texts = row.select('text');
 
-      var yGroup = g.append('g')
-        .attr('class', 'y axis')
-        .call(yAxis);
+        row = row.merge(rowEnter)
+          .attr('transform', (d) => 'translate(0,' + scale(d) + ')');
 
-      var range = yAxis.range();
-      //xScale.range([range[0]+padding, range[1]-padding]).clamp(true);
-      xScale.range([range[0], range[1]]).clamp(true);
-      var xAxis = d3.axisBottom(xScale);
-      var xGroup = g.append('g')
-        .attr('class', 'x axis')
-        .attr('transform', translate(0, height))
-        .call(xAxis);
+        rowExit.remove();
 
-      xGroup.select('.domain').remove();
-      xGroup.selectAll('.tick line')
-        .attr('stroke', '#AAA')
-        .attr('stroke-width', 0.75)
-        .attr('y1', -height);
+        rowEnter.append('rect')
+          .attr('y', 0.5)
+          .attr('width', width)
+          .attr('height', scale.bandwidth())
+          .attr('stroke', line_color)
+          .attr('stroke-width', 0.75)
+          .attr('fill', colorscale);  // should be re-done if domain changed?
 
-      var ticks = xScale.ticks().map(xScale);
-      yGroup.call(yAxis.draw_ticks, ticks);
+        if (orient !== none) {
+          texts = texts.merge(rowEnter.append('text')
+            .attr('y', scale.bandwidth() / 2)
+            .attr('dy', '0.32em')
+          ).text(labels);
 
-      var padding2 = padding + padding;
-      var yScaleList = data.map(x => yScale(x.label) + padding);
-      var yScaleBandwidth = yScale.bandwidth() - padding2;
+          var text_width_limit = width * .2;
+          var offset = max_text_width(texts) + 2 * padding;
+          offset = Math.min(text_width_limit, offset);
+          offset = orient === right ? width - offset : offset;
 
+          range = orient === right ? [0, offset] : [offset, width];
 
-      var tasks = g.append('g')
-        .selectAll('g')
-        .data(data)
-        .enter().append('g')
-        .attr('transform', d => 'translate(0, ' + yScale(d.label) + ')')
-        .classed('task', true)
-        .each((d1, i1, n) => {
-          var cScale;
-          if(!isNaN(d1.min)) {
-            cScale = d3.scaleLinear().domain([d1.min,d1.max]).range([0, 270]);
-          } else {
-            cScale = getColor;
-          }
-          d3.select(n[i1]).selectAll('rect')
-            .data(d => d.data).enter().each((d2, i, n) => {
-              g2 = d3.select(n[i]);
-              var bgColor = d3.hcl(cScale(names(d2)), 100, 75);//getColor(names(d2), d1, cScale);
-              var xStart = xScale(starts(d2));
-              var xWidth = xScale(ends(d2)) - xStart;
-              g2.append('rect')
-                .attr('y', 5)
-                .attr('x', xStart)
-                .attr('width', xWidth + 0.5)
-                .attr('height', yScaleBandwidth)
-                .attr('data-y', yScaleList[i1] + yScaleBandwidth)
-                .on('mouseover', tip.show)
-                .on('mouseout', tip.hide)
-                .attr('fill', bgColor);
-              if(xWidth > padding2) {
-                var str1 = names(d2);
-                var t = g2
-                  .append('text')
-                  .attr('x', xStart)
-                  .attr('y', 5)
-                  .attr('dx', padding)
-                  .attr('dy', yScaleBandwidth / 2 + padding)
-                  .attr('text-anchor', 'start')
-                  .attr('fill', 'black')
-                  .attr('pointer-events', 'none')
-                  .text(str1);
-                if(xWidth - padding < t.node().getComputedTextLength()) {
-                  t.remove();
-                }
-              }
-          });
-        });
-      return;
+          texts
+            .attr('text-anchor', orient === right ? 'start' : 'end')
+            .attr('dx', orient === right ? padding : -padding)
+            .attr('x', offset);
+        } else {
+          offset = 0;
+          range = [0, width];
+        }
 
-      tasks
-        //.transition().duration(duration)
-        .attr('transform', d => translate(xScale(starts(d)), yScale(label)))
-        .selectAll('rect')
-        .attr('width', d => xScale(ends(d)) - xScale(starts(d)))
-        .on('start', trim_text);
-
-      if (today)
         selection.append('path')
-          .attr('stroke', 'red')
-          .attr('d', 'M' + xScale(new Date) + ',0.5V' + height);
+          .attr('stroke', line_color)
+          .attr('d', 'M' + (offset + .5) + ',0.5V' + scale.range()[1]);
+      }
 
-    });
-  }
+      axis.draw_ticks = function (selection, ticks) {
+        selection.selectAll('.row').select('path')
+          .attr('d', ticks.map(
+            (t) => 'M' + t + ',' + 1 + 'v' + (scale.bandwidth() - 1)).join(''));
+      };
 
-  //chart.axis     = function(_) { return arguments.length? (axis  = _, chart): axis ; };
-  chart.dates = function (_) { return arguments.length ? (dates = _, chart) : dates; };
-  chart.width = function (_) { return arguments.length ? (const_width = _, chart) : const_width; };
-  chart.today = function (_) { return arguments.length ? (today = _, chart) : today; };
-  chart.colors = function (_) { return arguments.length ? (colors = _, chart) : colors; };
-  chart.padding = function (_) { return arguments.length ? (padding = _, chart) : padding; };
-  chart.reversed = function (_) { return arguments.length ? (reversed = _, chart) : reversed; };
-  chart.duration = function (_) { return arguments.length ? (duration = _, chart) : duration; };
+      axis.scale = function (_) { return arguments.length ? (scale = _, axis) : scale };
+      axis.width = function (_) { return arguments.length ? (width = _, axis) : width };
+      axis.colors = function (_) { return arguments.length ? (colors = _, axis) : colors };
+      axis.padding = function (_) { return arguments.length ? (padding = _, axis) : padding };
+      axis.range = function (_) { return arguments.length ? (range = _, axis) : range };
+      axis.trim = function (_) { return arguments.length ? (trim = _, axis) : trim };
 
-  return chart;
-
-  function tooltip_html(d, i) {
-    //var format = d3.isoParse.wrap(d3.timeFormat('%Y-%m-%d'));
-    //        var format = compose(d3.isoParse, d3.timeFormat('%Y-%m-%d'));
-    var seconds = (ends(d) - starts(d)) / 1000;
-    var dateFormat;
-    if(seconds < 3600 * 18) {
-      dateFormat = '%H:%M:%S';
-    } else if(seconds < 86400 * 7 ) {
-      dateFormat = '%m-%d %H:%M'
-    } else {
-      dateFormat = '%Y-%m-%d'
+      return axis;
     }
-    var format = (d) => d3.timeFormat(dateFormat)(d3.isoParse(d));
-    return '<b>' + names(d) + '</b>' +
-      '<hr style="margin: 2px 0 2px 0">' +
-      format(starts(d)) + ' - ' + format(ends(d)) + '<br>' +
-      durationFormat(seconds);
-  }
-};
 
-var x = {};
-x.chartTimeline = timeline;
-x.tooltip = tooltip;
-x.timelineAxisLeft = timelineAxisLeft;
-x.timelineAxisRight = timelineAxisRight;
-x.durationFormat = durationFormat;
+    function timelineAxisLeft(scale) {
+      return timelineAxis(left, scale);
+    }
+    
+    function timelineAxisRight(scale) {
+      return timelineAxis(right, scale);
+    }
 
-Object.assign(d3, x);
-})();
+    function timelineAxisNone(scale) {
+      return timelineAxis(none, scale);
+    }
+
+    function durationFormat(seconds) {
+      function round10(x) {
+        return Math.round(x * 10) / 10;
+      }
+      var cut_off = 2;
+      if (seconds < cut_off * 60)
+        return seconds + 's'
+      else if (seconds < cut_off * 60 * 60)
+        return round10(seconds / 60) + ' min'
+      else if (seconds < cut_off * 60 * 60 * 24)
+        return round10(seconds / 3600) + ' hours'
+      else if (seconds < cut_off * 3600 * 24 * 30)
+        return round10(seconds / 86400) + ' day(s)'
+      else if (seconds < cut_off * 3600 * 24 * 365)
+        return round10(seconds / (86400 * 30)) + ' month(s)'
+      else
+        return round10(seconds / (86400 * 365)) + ' year(s)';
+
+    }
+
+    function getFontSize(element) {
+      var style = window.getComputedStyle(element, null).getPropertyValue('font-size');
+      return parseFloat(style);
+    }
+
+    function translate(x, y) {
+      return 'translate(' + x + ',' + y + ')';
+    }
+
+    var timeline = function () {
+      function f(value) {
+        return function (d) {
+          return value === undefined ? d : d[value];
+        }
+      }
+
+      var padding = 5,
+        reversed = false,
+        today = false,
+        dates,
+        const_width,
+        duration = 0,
+        names = f(0),
+        starts = f(1),
+        ends = f(2);
 
 
-(function () {
+      function chart(selection) {
+        var color_index = 0;
+        // Known colors for static data,
+        // should add for very common state string manually.
+        const known_colors = {
+          on: d3.hcl(0, 95, 75),
+          active: d3.hcl(15, 90, 75),
+          off: d3.hcl(120, 90, 75),
+          deactive: d3.hcl(150, 90, 75),
+        };
+        // Distribute the color data like complete binary tree
+        function getColorRange(x) {
+          if (x == 0) return 0;
+          if (x == 1) return 1;
+          var x1 = x - 1;
+          var y = Math.floor(Math.log2(x1))
+          var e = Math.pow(2, y);
+          var n = x1 - e
+          return (n + n + 1) / (e + e);
+        }
+        var color_dict = new Map();
+        // Custom color assign
+        function getColor(name) {
+          var ret;
+          if ((ret = known_colors[name]) !== undefined) {
+          } else if ((ret = color_dict.get(name)) !== undefined) {
+          } else {
+            var h1 = getColorRange(color_index);
+            ret = d3.hcl(h1 * 240, 60, 75);
+            color_index++;
+            color_dict[name] = ret;
+          }
+          return ret;
+        }
+        var
+          dataTable = selection.datum(),
+          rows = d3.map(dataTable, x => x.label).keys();
+
+        dates = dates ||
+          [d3.min(dataTable, d => d.start), d3.max(dataTable, d => d.end)];
+
+        selection.each(function (data) {
+          var width = const_width || this.getBoundingClientRect().width,
+            height = rows.length * (getFontSize(this) + 4 * padding),
+            yScale = d3.scaleBand().domain(rows).range([0, height]), //.padding(0.1),
+            xScale = d3.scaleTime().domain(dates),
+            yAxis;
+          if (data.length == 1) {
+            yAxis = timelineAxisNone(yScale).width(width);
+          } else {
+            yAxis = (reversed ? timelineAxisRight : timelineAxisLeft)(yScale).width(width);
+          }
+          d3.select(this).select('div').remove();
+          d3.select(this).select('svg').remove();
+          var svg = d3.select(this).append('svg').attr('class', 'timeline');
+          var tip = new tooltip(this, tooltip_html);
+
+          svg.attr('width', width);
+          svg.attr('height', height + 20); // margin.bottom
+
+          var g = svg.append('g');
+          g.selectAll('g.task').data(data).exit().remove();
+
+          var yGroup = g.append('g')
+            .attr('class', 'y axis')
+            .call(yAxis);
+
+          var range = yAxis.range();
+          xScale.range([range[0], range[1]]).clamp(true);
+          var xAxis = d3.axisBottom(xScale);
+          var xGroup = g.append('g')
+            .attr('class', 'x axis')
+            .attr('transform', translate(0, height))
+            .call(xAxis);
+
+          xGroup.select('.domain').remove();
+          xGroup.selectAll('.tick line')
+            .attr('stroke', '#AAA')
+            .attr('stroke-width', 0.75)
+            .attr('y1', -height);
+
+          var ticks = xScale.ticks().map(xScale);
+          yGroup.call(yAxis.draw_ticks, ticks);
+
+          var padding2 = padding + padding;
+          var yScaleList = data.map(x => yScale(x.label) + padding);
+          var yScaleBandwidth = yScale.bandwidth() - padding2;
+
+          var tasks = g.append('g')
+            .selectAll('g')
+            .data(data)
+            .enter().append('g')
+            .attr('transform', d => 'translate(0, ' + yScale(d.label) + ')')
+            .classed('task', true)
+            .each((d1, i1, n) => {
+              d3.select(n[i1]).selectAll('rect')
+                .data(d => d.data).enter().each((d2, i, n) => {
+                  g2 = d3.select(n[i]);
+                  var bgColor = getColor(names(d2));
+                  var xStart = xScale(starts(d2));
+                  var xWidth = xScale(ends(d2)) - xStart;
+                  g2.append('rect')
+                    .attr('y', 5)
+                    .attr('x', xStart)
+                    .attr('width', xWidth + 0.5)
+                    .attr('height', yScaleBandwidth)
+                    .attr('data-y', yScaleList[i1] + yScaleBandwidth)
+                    .on('mouseover', tip.show)
+                    .on('mouseout', tip.hide)
+                    .attr('fill', bgColor);
+                  if (xWidth > padding2) {
+                    // Hide text for small node
+                    var str1 = names(d2);
+                    var t = g2
+                      .append('text')
+                      .attr('x', xStart)
+                      .attr('y', 5)
+                      .attr('dx', padding)
+                      .attr('dy', yScaleBandwidth / 2 + padding)
+                      .attr('text-anchor', 'start')
+                      .attr('fill', 'black')
+                      .attr('pointer-events', 'none')
+                      .text(str1);
+                    if (xWidth - padding < t.node().getComputedTextLength()) {
+                      t.remove();
+                    }
+                  }
+                });
+            });
+          return;
+
+          tasks
+            //.transition().duration(duration)
+            .attr('transform', d => translate(xScale(starts(d)), yScale(label)))
+            .selectAll('rect')
+            .attr('width', d => xScale(ends(d)) - xScale(starts(d)))
+            .on('start', trim_text);
+
+          if (today)
+            selection.append('path')
+              .attr('stroke', 'red')
+              .attr('d', 'M' + xScale(new Date) + ',0.5V' + height);
+
+        });
+      }
+
+      //chart.axis     = function(_) { return arguments.length? (axis  = _, chart): axis ; };
+      chart.dates = function (_) { return arguments.length ? (dates = _, chart) : dates; };
+      chart.width = function (_) { return arguments.length ? (const_width = _, chart) : const_width; };
+      chart.today = function (_) { return arguments.length ? (today = _, chart) : today; };
+      chart.colors = function (_) { return arguments.length ? (colors = _, chart) : colors; };
+      chart.padding = function (_) { return arguments.length ? (padding = _, chart) : padding; };
+      chart.reversed = function (_) { return arguments.length ? (reversed = _, chart) : reversed; };
+      chart.duration = function (_) { return arguments.length ? (duration = _, chart) : duration; };
+
+      function tooltip_html(d, i) {
+        // Format date for human
+        var seconds = (ends(d) - starts(d)) / 1000;
+        var dateFormat;
+        if (seconds < 3600 * 18) {
+          dateFormat = '%H:%M:%S';
+        } else if (seconds < 86400 * 7) {
+          dateFormat = '%m-%d %H:%M'
+        } else {
+          dateFormat = '%Y-%m-%d'
+        }
+        var format = (d) => d3.timeFormat(dateFormat)(d3.isoParse(d));
+        return '<b>' + names(d) + '</b>' +
+          '<hr style="margin: 2px 0 2px 0">' +
+          format(starts(d)) + ' - ' + format(ends(d)) + '<br>' +
+          durationFormat(seconds);
+      }
+
+      return chart;
+    };
+
+    var x = {};
+    x.chartTimeline = timeline;
+    x.tooltip = tooltip;
+    x.timelineAxisLeft = timelineAxisLeft;
+    x.timelineAxisRight = timelineAxisRight;
+    x.durationFormat = durationFormat;
+
+    Object.assign(d3, x);
+  })();
+
+  (function () {
     if (customElements.get('ha-chart-base'))
-        return;
+      return;
     /**
      * `billboard-charts`
      * Polymer wrapper around billboard.js charting library
      *
      * @customElement
      * @polymer
-     * @demo demo/index.html
      */
     class BillboardCharts extends Polymer.Element {
-        constructor() {
-            super(...arguments);
+      constructor() {
+        super(...arguments);
+      }
+      get chart() {
+        return this._chart;
+      }
+      static get is() { return 'ha-chart-base'; }
+      static get properties() {
+        return {
+          publish: {
+            type: Boolean,
+            observer: 'onPropsChange'
+          },
+          data: {
+            type: Object,
+            observer: 'onPropsChange'
+          },
+          newData: {
+            type: Object,
+            observer: 'onNewData'
+          },
+          selectedElement: {
+            type: Object,
+            readOnly: true,
+            notify: true,
+          }
+        };
+      }
+      loaded() {
+        this._cssLoaded = true;
+        this.onPropsChange();
+      }
+      onPropsChange() {
+        // if (!this._cssLoaded)
+        //     return;
+        if (!this.publish || !this.data || !this.data.data)
+          return;
+        if (this.data.type == 'timeline') {
+          this.drawTimeline();
+          return;
         }
-        get chart() {
-            return this._chart;
+        this.data.bindto = this.$.chartTarget;
+        if (!this.data.data.onclick) {
+          //debugger;
+          this.data.data.onclick = (dataPoint, element) => {
+            this['_setSelectedElement'](dataPoint);
+          };
         }
-        static get is() { return 'ha-chart-base'; }
-        static get properties() {
-            return {
-                publish: {
-                    type: Boolean,
-                    observer: 'onPropsChange'
-                },
-                data: {
-                    type: Object,
-                    observer: 'onPropsChange'
-                },
-                newData: {
-                    type: Object,
-                    observer: 'onNewData'
-                },
-                selectedElement: {
-                    type: Object,
-                    readOnly: true,
-                    notify: true,
-                }
-            };
+        if (!this._chart) {
+          this._chart = bb.generate(this.data);
+          if (this.newData)
+            this.onNewData();
         }
-        loaded() {
-            this._cssLoaded = true;
-            this.onPropsChange();
+        else {
+          this._chart = bb.generate(this.data);
         }
-        onPropsChange() {
-            // if (!this._cssLoaded)
-            //     return;
-            if (!this.publish || !this.data || !this.data.data)
-                return;
-            this.data.bindto = this.$.chartTarget;
-            if (!this.data.data.onclick) {
-                //debugger;
-                this.data.data.onclick = (dataPoint, element) => {
-                    this['_setSelectedElement'](dataPoint);
-                };
-            }
-            if (!this._chart) {
-                this._chart = bb.generate(this.data);
-                if (this.newData)
-                    this.onNewData();
-            }
-            else {
-                this._chart = bb.generate(this.data);
-            }
+      }
+      onNewData() {
+        if (this.newData && this._chart) {
+          this._chart.load(this.newData);
         }
-        onNewData() {
-            if (this.newData && this._chart) {
-                this._chart.load(this.newData);
-            }
-        }
+      }
+      drawTimeline() {
+        var chart = d3.chartTimeline();
+    
+        d3.select(this.$.chartTarget).datum(this.data.data).call(chart);
+      }
     }
     customElements.define(BillboardCharts.is, BillboardCharts);
-})();
+  })();
+
 </script>
