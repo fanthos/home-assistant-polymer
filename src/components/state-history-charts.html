@@ -27,8 +27,6 @@
     }
     </style>
 
-    <google-legacy-loader on-api-load="_googleApiLoaded"></google-legacy-loader>
-
     <ha-chart-timeline
       data='[[historyData.timeline]]'
       end-time='[[_computeEndTime(endTime, upToNow)]]'>
@@ -41,6 +39,8 @@
         end-time='[[_computeEndTime(endTime, upToNow)]]'>
       </ha-chart-line>
     </template>
+    
+    <google-legacy-loader on-api-load="_googleApiLoaded"></google-legacy-loader>
 
     <template is='dom-if' if='[[_isLoading]]'>
       <div class='loading-container'>

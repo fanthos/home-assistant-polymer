@@ -53,8 +53,9 @@
     "vaadin-date-picker": "vaadin/vaadin-date-picker#^2.0.0",
     "web-animations-js": "^2.2.5",
     "webcomponentsjs": "1.0.4",
-    "billboard-charts": "^0.0.5",
-    "d3": "^4.10.0"
+    "billboard.js": "^1.0.1",
+    "d3": "^4.10.0",
+    "d3-gtimeline": "fanthos/d3-gtimeline-ha#^0.1.0"
   },
   "devDependencies": {
     "web-component-tester": "^6.0.0"
