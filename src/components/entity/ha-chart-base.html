@@ -2,13 +2,13 @@
 
 <dom-module id="ha-chart-base">
   <link rel="import" type="css" href="../../../bower_components/billboard.js/dist/billboard.min.css">
+  <style>
+     :host {
+      display: block;
+      /* @apply --my-custom-chart-istic-mixin; */
+    }
+  </style>
   <template>
-    <style>
-       :host {
-        display: block;
-        /* @apply --my-custom-chart-istic-mixin; */
-      }
-    </style>
     <div id="chartTarget"></div>
   </template>
 </dom-module>
@@ -63,36 +63,27 @@
           type: Object,
           readOnly: true,
           notify: true,
-        }
+        },
+        connected: {
+          type: Object,
+          readOnly: false,
+          observer: 'onPropsChange'
+        },
       };
     }
-    loaded() {
-      this._cssLoaded = true;
-      this.onPropsChange();
+    connectedCallback() {
+      this.connected = true;
     }
     onPropsChange() {
       // if (!this._cssLoaded)
       //     return;
+      if (!this.connected) return;
       if (!this.publish || !this.data || !this.data.data) return;
       if (this.data.type === 'timeline') {
         this.drawTimeline();
         return;
       }
-      this.data.bindto = this.$.chartTarget;
-      if (!this.data.data.onclick) {
-        // debugger;
-        this.data.data.onclick = (dataPoint) => {
-          this._setSelectedElement(dataPoint);
-        };
-      }
-      if (!this._chart) {
-        this._chart = bb.generate(this.data);
-        if (this.newData) {
-          this.onNewData();
-        }
-      } else {
-        this._chart = bb.generate(this.data);
-      }
+      this.drawBbChart();
     }
     onNewData() {
       if (this.newData && this._chart) {
@@ -107,7 +98,96 @@
         off: d3.hcl(120, 90, 75),
         deactive: d3.hcl(150, 90, 75)
       };
-      d3.select(this.$.chartTarget).datum(this.data.data).call(chart);
+      var chartNode = this.$.chartTarget;
+      var data = this.data;
+      var _draw = function () {
+        if (chartNode.clientWidth === 0) {
+          setTimeout(_draw, 10);
+          return;
+        }
+        d3.select(chartNode).datum(data.data).call(chart);
+      };
+      _draw();
+    }
+    drawBbChart() {
+      const timeDateFormat = d3.timeFormat('%m-%d');
+      const timeDayFormat = d3.timeFormat('%H:%M');
+      const timeFullFormat = d3.timeFormat('%Y-%m-%d %H:%M:%S');
+      var chartData = {
+        data: {
+          xs: this.data.xs,
+          columns: this.data.data,
+        },
+        axis: {
+          x: {
+            type: 'timeseries',
+            tick: {
+              culling: true,
+              format: (d) => {
+                if (d.getHours() + d.getMinutes() + d.getSeconds() === 0) {
+                  return timeDateFormat(d);
+                }
+                return timeDayFormat(d);
+              },
+              fit: false,
+              width: 60,
+            },
+            padding: {
+              left: 0,
+            }
+          },
+          y: {
+            tick: {
+              count: 5
+            },
+            padding: {
+              top: 0,
+              bottom: 0
+            }
+          }
+        },
+        size: {
+          height: 200,
+        },
+        point: { show: false },
+        grid: {
+          x: { show: true },
+          y: { show: true }
+        },
+        tooltip: {
+          format: {
+            title: timeFullFormat,
+          },
+          position: function () {
+            return { top: 0, left: 0 };
+          },
+        },
+        title: {
+          text: this.data.title,
+          // position: 'top-left',
+          // padding: {
+          //   left: 10
+          // }
+        },
+        padding: {
+          top: 8
+        }
+      };
+      chartData.bindto = this.$.chartTarget;
+      if (!chartData.data.onclick) {
+        // debugger;
+        chartData.data.onclick = (dataPoint) => {
+          this._setSelectedElement(dataPoint);
+        };
+      }
+      if (!this._chart) {
+        this._chart = bb.generate(chartData);
+        if (this.newData) {
+          this.onNewData();
+        }
+      } else {
+        this._chart = bb.generate(chartData);
+      }
     }
   }
   customElements.define(ExtenedChart.is, ExtenedChart);

@@ -12,6 +12,7 @@ module.exports.minifyStream = function (stream) {
     .pipe(sourcesHtmlSplitter.split())
     .pipe(gulpif(/[^app]\.js$/, babel({
       sourceType: 'script',
+      babelrc: false,
       presets: [
         ['es2015', { modules: false }]
       ]

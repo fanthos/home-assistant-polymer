@@ -10,7 +10,6 @@
 
 <dom-module id="state-history-charts">
   <template>
-    <link href="https://ajax.googleapis.com/ajax/static/modules/gviz/1.0/core/tooltip.css" rel="stylesheet" type="text/css">
     <style>
     :host {
       display: block;
@@ -27,46 +26,23 @@
     }
     </style>
 
-    <ha-chart-timeline
+    <template is='dom-if' if='[[_computeIsEmpty(historyData)]]'>
+      No state history found.
+    </template>
+
+
+    <state-history-chart-timeline
       data='[[historyData.timeline]]'
       end-time='[[_computeEndTime(endTime, upToNow)]]'>
-    </ha-chart-timeline>
+    </state-history-chart-timeline>
+
     <template is='dom-repeat' items='[[historyData.line]]'>
-      <ha-chart-line
+      <state-history-chart-line
         unit='[[item.unit]]'
         data='[[item.data]]'
         is-single-device='[[_computeIsSingleLineChart(historyData)]]'
         end-time='[[_computeEndTime(endTime, upToNow)]]'>
-      </ha-chart-line>
-    </template>
-    
-    <google-legacy-loader on-api-load="_googleApiLoaded"></google-legacy-loader>
-
-    <template is='dom-if' if='[[_isLoading]]'>
-      <div class='loading-container'>
-        <paper-spinner active alt='Updating history data'></paper-spinner>
-      </div>
-    </template>
-
-    <template is='dom-if' if='[[!_isLoading]]'>
-      <template is='dom-if' if='[[_computeIsEmpty(historyData)]]'>
-        No state history found.
-      </template>
-
-
-      <state-history-chart-timeline
-        data='[[historyData.timeline]]'
-        end-time='[[_computeEndTime(endTime, upToNow)]]'>
-      </state-history-chart-timeline>
-
-      <template is='dom-repeat' items='[[historyData.line]]'>
-        <state-history-chart-line
-          unit='[[item.unit]]'
-          data='[[item.data]]'
-          is-single-device='[[_computeIsSingleLineChart(historyData)]]'
-          end-time='[[_computeEndTime(endTime, upToNow)]]'>
-        </state-history-chart-line>
-      </template>
+      </state-history-chart-line>
     </template>
   </template>
 </dom-module>
@@ -108,15 +84,6 @@ Polymer({
 
   _computeIsSingleLineChart: function (historyData) {
     return historyData && historyData.line.length === 1;
-  },
-
-  _googleApiLoaded: function () {
-    window.google.load('visualization', '1', {
-      packages: ['timeline', 'corechart'],
-      callback: function () {
-        this._apiLoaded = true;
-      }.bind(this),
-    });
   },
 
   _computeIsLoading: function (_isLoadingData, _apiLoaded) {
