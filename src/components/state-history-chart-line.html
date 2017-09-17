@@ -10,17 +10,6 @@
 (function () {
   'use strict';
 
-  function range(start, end) {
-    var result = [];
-    var i;
-
-    for (i = start; i < end; i++) {
-      result.push(i);
-    }
-
-    return result;
-  }
-
   function saveParseFloat(value) {
     var parsed = parseFloat(value);
     return !isNaN(parsed) && isFinite(parsed) ? parsed : null;
