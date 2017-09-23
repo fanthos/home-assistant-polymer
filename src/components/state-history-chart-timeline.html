@@ -3,7 +3,7 @@
 
 <dom-module id='state-history-chart-timeline'>
   <template>
-      <ha-chart-base publish data="[[chartData]]" selected-element ="{{selectedDataPoint}}"></ha-chart-base>
+      <ha-chart-base publish data="[[chartData]]"></ha-chart-base>
   </template>
 </dom-module>
 <script>
@@ -55,8 +55,9 @@ Polymer({
       return;
     }
 
-    if (!stateHistory || stateHistory.length === 0) {
-      return;
+    if (!stateHistory) {
+      // || stateHistory.length === 0) {
+      stateHistory = [];
     }
 
     startTime = new Date(

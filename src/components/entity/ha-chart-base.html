@@ -1,4 +1,4 @@
-<link rel='import' href='../../../bower_components/polymer/polymer.html'>
+<link rel='import' href='../../../bower_components/polymer/polymer-element.html'>
 
 <dom-module id="ha-chart-base">
   <link rel="import" type="css" href="../../../bower_components/billboard.js/dist/billboard.min.css">
@@ -19,7 +19,6 @@
 /* global d3 bb */
 
 (function () {
-  if (customElements.get('ha-chart-base')) return;
   /**
    * `billboard-charts`
    * Polymer wrapper around billboard.js charting library
@@ -27,7 +26,7 @@
    * @customElement
    * @polymer
    */
-  class ExtenedChart extends Polymer.Element {
+  class HaChartBase extends Polymer.Element {
     get chart() {
       return this._chart;
     }
@@ -41,10 +40,6 @@
         data: {
           type: Object,
           observer: 'onPropsChange'
-        },
-        newData: {
-          type: Object,
-          observer: 'onNewData'
         },
         selectedElement: {
           type: Object,
@@ -62,20 +57,14 @@
       this.connected = true;
     }
     onPropsChange() {
-      // if (!this._cssLoaded)
-      //     return;
-      if (!this.connected) return;
-      if (!this.publish || !this.data || !this.data.data) return;
+      if (!this.connected || !this.publish || !this.data || !this.data.data) {
+        return;
+      }
       if (this.data.type === 'timeline') {
         this.drawTimeline();
         return;
       }
       this.drawBbChart();
-    }
-    onNewData() {
-      if (this.newData && this._chart) {
-        this._chart.load(this.newData);
-      }
     }
     drawTimeline() {
       var chart = d3.timeline();
@@ -158,25 +147,12 @@
         },
         padding: {
           top: 8
-        }
+        },
+        bindto: this.$.chartTarget,
       };
-      chartData.bindto = this.$.chartTarget;
-      if (!chartData.data.onclick) {
-        // debugger;
-        chartData.data.onclick = (dataPoint) => {
-          this._setSelectedElement(dataPoint);
-        };
-      }
-      if (!this._chart) {
-        this._chart = bb.generate(chartData);
-        if (this.newData) {
-          this.onNewData();
-        }
-      } else {
-        this._chart = bb.generate(chartData);
-      }
+      this._chart = bb.generate(chartData);
     }
   }
-  customElements.define(ExtenedChart.is, ExtenedChart);
+  customElements.define(HaChartBase.is, HaChartBase);
 }());
 </script>
