@@ -4,19 +4,19 @@
     <meta charset="utf-8">
     <title>Home Assistant</title>
 
-    <link rel='manifest' href='/manifest.json' crossorigin="use-credentials">
-    <link rel='icon' href='/static/icons/favicon.ico'>
+    <link rel='manifest' href='manifest.json' crossorigin="use-credentials">
+    <link rel='icon' href='static/icons/favicon.ico'>
     <link rel='apple-touch-icon' sizes='180x180'
-          href='/static/icons/favicon-apple-180x180.png'>
-    <link rel="mask-icon" href="/static/icons/mask-icon.svg" color="#3fbbf4">
-    <link rel='preload' href='/home-assistant-polymer/build/core.js' as='script'/>
-    <link rel='preload' href='/static/fonts/roboto/Roboto-Regular.ttf' as='font' crossorigin />
-    <link rel='preload' href='/static/fonts/roboto/Roboto-Medium.ttf' as='font' crossorigin />
+          href='static/icons/favicon-apple-180x180.png'>
+    <link rel="mask-icon" href="static/icons/mask-icon.svg" color="#3fbbf4">
+    <link rel='preload' href='home-assistant-polymer/build/core.js' as='script'/>
+    <link rel='preload' href='static/fonts/roboto/Roboto-Regular.ttf' as='font' crossorigin />
+    <link rel='preload' href='static/fonts/roboto/Roboto-Medium.ttf' as='font' crossorigin />
     <meta name='apple-mobile-web-app-capable' content='yes'>
-    <meta name="msapplication-square70x70logo" content="/static/icons/tile-win-70x70.png"/>
-    <meta name="msapplication-square150x150logo" content="/static/icons/tile-win-150x150.png"/>
-    <meta name="msapplication-wide310x150logo" content="/static/icons/tile-win-310x150.png"/>
-    <meta name="msapplication-square310x310logo" content="/static/icons/tile-win-310x310.png"/>
+    <meta name="msapplication-square70x70logo" content="static/icons/tile-win-70x70.png"/>
+    <meta name="msapplication-square150x150logo" content="static/icons/tile-win-150x150.png"/>
+    <meta name="msapplication-wide310x150logo" content="static/icons/tile-win-310x150.png"/>
+    <meta name="msapplication-square310x310logo" content="static/icons/tile-win-310x310.png"/>
     <meta name="msapplication-TileColor" content="#3fbbf4ff"/>
     <meta name='mobile-web-app-capable' content='yes'>
     <meta name='referrer' content='same-origin'>
@@ -86,7 +86,7 @@
       if (!webComponentsSupported) {
         var e = document.createElement('script');
         e.onerror = initError;
-        e.src = '/static/webcomponents-lite.js';
+        e.src = 'static/webcomponents-lite.js';
         if ('import' in document.createElement('link')) {
           document.write(e.outerHTML);
         } else {
@@ -95,19 +95,20 @@
       }
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('/service_worker.js');
+          navigator.serviceWorker.register('service_worker.js');
         });
       }
-      window.CHART_SCRIPT = '/home-assistant-polymer/src/resources/ha-chart-scripts.html';
+      window.relUrl = window.location.pathname.replace(/\/$/, "");
+      window.CHART_SCRIPT = 'home-assistant-polymer/src/resources/ha-chart-scripts.html';
     </script>
-    <!--<script src='/home-assistant-polymer/build/_demo_data_compiled.js'></script>-->
+    <!--<script src='home-assistant-polymer/build/_demo_data_compiled.js'></script>-->
     <!--EXTRA_SCRIPTS-->
-    <script src='/home-assistant-polymer/build/core.js'></script>
-    <link rel='import' href='/home-assistant-polymer/src/home-assistant.html' onerror='initError()'>
+    <script src='home-assistant-polymer/build/core.js'></script>
+    <link rel='import' href='home-assistant-polymer/src/home-assistant.html' onerror='initError()'>
     {% if panel_url -%}
       <link rel='import' href='{{ panel_url }}' async>
     {% endif -%}
-    <link rel='import' href='/home-assistant-polymer/hass_frontend/mdi.html' async>
+    <link rel='import' href='home-assistant-polymer/hass_frontend/mdi.html' async>
     {% for extra_url in extra_urls -%}
       <link rel='import' href='{{ extra_url }}' async>
     {% endfor -%}

@@ -72,9 +72,9 @@ window.hassMixins.NavigateMixin = Polymer.dedupingMixin(superClass =>
   class extends window.hassMixins.EventsMixin(superClass) {
     navigate(path, replace = false) {
       if (replace) {
-        history.replaceState(null, null, path);
+        history.replaceState(null, null, '#' + path);
       } else {
-        history.pushState(null, null, path);
+        history.pushState(null, null, '#' + path);
       }
       this.fire('location-changed');
     }

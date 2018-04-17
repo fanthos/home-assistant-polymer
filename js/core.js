@@ -8,7 +8,7 @@ window.HASS_VERSION = __VERSION__;
 
 const init = window.createHassConnection = function (password) {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
-  const url = `${proto}://${window.location.host}/api/websocket?${window.HASS_BUILD}`;
+  const url = `${proto}://${window.location.host}${window.relUrl}/api/websocket?${window.HASS_BUILD}`;
   const options = {
     setupRetry: 10,
   };

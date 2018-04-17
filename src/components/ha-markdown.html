@@ -25,7 +25,7 @@ class HaMarkdown extends window.hassMixins.EventsMixin(Polymer.Element) {
     this._resize = () => this.fire('iron-resize');
 
     Polymer.importHref(
-      '/static/markdown-js.html',
+      'static/markdown-js.html',
       () => { this._scriptLoaded = 1; this._render(); },
       () => { this._scriptLoaded = 2; this._render(); },
     );
