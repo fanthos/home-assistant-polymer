@@ -256,7 +256,7 @@ class HaSidebar extends
       return;
     }
     var path = '/' + newChoice;
-    if (path === document.location.pathname) {
+    if (path === document.location.hash) {
       return;
     }
     this.navigate(path);

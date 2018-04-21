@@ -215,7 +215,7 @@ class HaPanelMailbox extends window.hassMixins.LocalizeMixin(Polymer.Element) {
     var platform = event.model.item.platform;
     this.currentMessage = event.model.item;
     this.$.mp3dialog.open();
-    this.$.mp3src.src = '/api/mailbox/media/' + platform + '/' + event.model.item.sha;
+    this.$.mp3src.src = this.hass.getApiPath('mailbox/media/' + platform + '/' + event.model.item.sha);
     this.$.transcribe.innerText = event.model.item.message;
     this.$.mp3.load();
     this.$.mp3.play();

@@ -85,7 +85,7 @@ class PartialPanelResolver extends Polymer.Element {
     this.errorLoading = false;
 
     Polymer.importHref(
-      './' + panel.url,
+      panel.url.replace(/\/?/, './'),
 
       () => {
         window.hassUtil.dynamicContentUpdater(this.$.panel, 'ha-panel-' + panel.component_name, {

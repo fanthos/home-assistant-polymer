@@ -9,7 +9,7 @@
 <link rel='import' href='./addon-view/hassio-addon-view.html'>
 
 <dom-module id="hassio-main">
-  <template>  
+  <template>
     <app-route
       route='[[route]]'
       pattern='/:page'
@@ -39,7 +39,7 @@
           page='[[routeData.page]]'
           supervisor-info='[[supervisorInfo]]'
           hass-info='[[hassInfo]]'
-          host-info='[[hostInfo]]'        
+          host-info='[[hostInfo]]'
         ></hassio-pages-with-tabs>
       </template>
       <template is='dom-if' if='[[equalsAddon(routeData.page)]]'>
@@ -47,15 +47,15 @@
           hass='[[hass]]'
           narrow='[[narrow]]'
           show-menu='[[showMenu]]'
-          route='[[route]]'          
+          route='[[route]]'
         ></hassio-addon-view>
-      </template>        
+      </template>
     </template>
   </template>
 </dom-module>
 
 <script>
-class HassioMain extends window.hassMixins.EventsMixin(Polymer.Element) {
+class HassioMain extends window.hassMixins.NavigateMixins(Polymer.Element) {
   static get is() { return 'hassio-main'; }
 
   static get properties() {
@@ -118,8 +118,7 @@ class HassioMain extends window.hassMixins.EventsMixin(Polymer.Element) {
 
   routeChanged(route) {
     if (route.path === '' && route.prefix === '/hassio') {
-      history.replaceState(null, null, '/hassio/dashboard');
-      this.fire('location-changed');
+      this.navigate('/hassio/dashboard' + id, true);
     }
   }
 

@@ -60,10 +60,10 @@ class MoreInfoCamera extends window.hassMixins.EventsMixin(Polymer.Element) {
 
   computeCameraImageUrl(hass, stateObj, isVisible) {
     if (hass.demo) {
-      return '/demo/webcam.jpg';
+      return 'demo/webcam.jpg';
     } else if (stateObj && isVisible) {
-      return '/api/camera_proxy_stream/' + stateObj.entity_id +
-             '?token=' + stateObj.attributes.access_token;
+      return this.hass.getApiPath('camera_proxy_stream/' + stateObj.entity_id +
+             '?token=' + stateObj.attributes.access_token);
     }
     // Return an empty image if no stateObj (= dialog not open) or in cleanup mode.
     return 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';

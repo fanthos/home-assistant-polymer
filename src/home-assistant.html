@@ -209,6 +209,10 @@ class HomeAssistant extends Polymer.Element {
         var auth = conn.options.authToken ? conn.options : {};
         return window.hassCallApi(host, auth, method, path, parameters);
       },
+      getApiPath: (path) => {
+        var host = window.location.protocol + '//' + window.location.host;
+        return window.hassGetApiPath(host, path);
+      },
     }, this.$.storage.getStoredState());
 
     var reconnected = () => {

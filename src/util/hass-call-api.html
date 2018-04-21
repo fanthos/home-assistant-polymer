@@ -1,6 +1,9 @@
 <script>
+window.hassGetApiUrl = function (host, path) {
+  return host + window.relUrl + '/api/' + path
+};
 window.hassCallApi = function (host, auth, method, path, parameters) {
-  var url = host + window.relUrl + '/api/' + path;
+  var url = window.hassGetApiUrl(host, path);
 
   if (window.HASS_DEMO) {
     var component = path.split('/', 1)[0];
